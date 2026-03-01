@@ -38,3 +38,20 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Custom Ignored Files ###
+*.env
+*.local
+.env.*
+.DS_Store
+*.log
+
+### OS Specific ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
