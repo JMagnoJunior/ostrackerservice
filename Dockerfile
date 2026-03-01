@@ -1,7 +1,8 @@
-FROM gradle:8.14.3-jdk24 AS build
+FROM eclipse-temurin:24-jdk AS build
 WORKDIR /workspace
 COPY . .
-RUN gradle --no-daemon clean bootJar
+RUN chmod +x gradlew
+RUN ./gradlew --no-daemon clean bootJar
 
 FROM eclipse-temurin:24-jre
 WORKDIR /app
