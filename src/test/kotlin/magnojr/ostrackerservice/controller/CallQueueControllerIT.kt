@@ -167,6 +167,9 @@ class CallQueueControllerIT {
         @Suppress("UNCHECKED_CAST")
         val hours = content.map { (it as Map<String, Any?>)["inactiveHours"] as Number }.map { it.toLong() }
         assertTrue(hours[0] > hours[1] || hours[0] >= hours[1], "Primeiro item deve ter mais horas inativas (mais antigo)")
-        assertTrue(hours[0] >= hours[1] && hours[1] >= hours[2], "Deve estar em ordem decrescente de inactiveHours (crescente de finishedAt)")
+        assertTrue(
+            hours[0] >= hours[1] && hours[1] >= hours[2],
+            "Deve estar em ordem decrescente de inactiveHours (crescente de finishedAt)",
+        )
     }
 }
