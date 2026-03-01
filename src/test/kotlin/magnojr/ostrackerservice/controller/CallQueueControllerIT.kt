@@ -13,22 +13,17 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.web.client.RestClient
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class CallQueueControllerIT {
-    @LocalServerPort
-    private var port: Int = 0
-
+class CallQueueControllerIT : BaseControllerIT() {
     @Autowired
     private lateinit var orderRepository: OrderRepository
 
@@ -37,8 +32,6 @@ class CallQueueControllerIT {
 
     @MockitoBean
     private lateinit var twilioClient: TwilioClient
-
-    private val restClient by lazy { RestClient.create("http://localhost:$port") }
 
     @AfterEach
     fun cleanup() {

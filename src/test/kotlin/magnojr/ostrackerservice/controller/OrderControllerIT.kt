@@ -15,23 +15,18 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.web.client.RestClient
 import java.math.BigDecimal
 import java.time.Duration
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class OrderControllerIT {
-    @LocalServerPort
-    private var port: Int = 0
-
+class OrderControllerIT : BaseControllerIT() {
     @Autowired
     private lateinit var orderRepository: OrderRepository
 
@@ -40,8 +35,6 @@ class OrderControllerIT {
 
     @MockitoBean
     private lateinit var twilioClient: TwilioClient
-
-    private val restClient by lazy { RestClient.create("http://localhost:$port") }
 
     @AfterEach
     fun cleanup() {
