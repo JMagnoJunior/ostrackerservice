@@ -24,8 +24,13 @@ class SecurityConfig(
                 auth
                     .dispatcherTypeMatchers(DispatcherType.ERROR)
                     .permitAll()
-                    .requestMatchers("/api/auth/token", "/actuator/health")
-                    .permitAll()
+                    .requestMatchers(
+                        "/api/auth/token",
+                        "/actuator/health",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                    ).permitAll()
                     .anyRequest()
                     .authenticated()
             }.sessionManagement {

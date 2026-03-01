@@ -61,4 +61,16 @@ class SecurityAccessIT : BaseControllerIT() {
 
         assertEquals(HttpStatus.OK, response.statusCode)
     }
+
+    @Test
+    fun `should allow openapi docs endpoint without token`() {
+        val response =
+            anonymousClient
+                .get()
+                .uri("/v3/api-docs")
+                .retrieve()
+                .toEntity(String::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+    }
 }
