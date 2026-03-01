@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260222-4
+      author: magnojr
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: client_name
+                  type: VARCHAR(255)
+              - column:
+                  name: client_phone
+                  type: VARCHAR(20)

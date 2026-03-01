@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260301-8-1
+      author: magnojr
+      changes:
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_status_finished_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: finished_at

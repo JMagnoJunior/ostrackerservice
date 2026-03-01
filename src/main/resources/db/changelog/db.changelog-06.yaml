@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260224-6-1
+      author: codex
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: last_notification_at
+                  type: TIMESTAMP
+
+  - changeSet:
+      id: 20260224-6-2
+      author: codex
+      changes:
+        - addColumn:
+            tableName: notification_logs
+            columns:
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+        - update:
+            tableName: notification_logs
+            columns:
+              - column:
+                  name: type
+                  value: INITIAL_ALERT
+            where: type IS NULL
+        - addNotNullConstraint:
+            tableName: notification_logs
+            columnName: type
+            columnDataType: VARCHAR(50)
+
+  - changeSet:
+      id: 20260224-6-3
+      author: codex
+      changes:
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_status_last_notification_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: last_notification_at
+        - createIndex:
+            tableName: notification_logs
+            indexName: idx_notification_logs_order_id_sent_at
+            columns:
+              - column:
+                  name: order_id
+              - column:
+                  name: sent_at

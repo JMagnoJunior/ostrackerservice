@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ostracker-postgres
+    environment:
+      POSTGRES_DB: ostracker
+      POSTGRES_USER: ostracker
+      POSTGRES_PASSWORD: ostracker
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ostracker -d ostracker"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ostracker-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ostracker
+      SPRING_DATASOURCE_USERNAME: ostracker
+      SPRING_DATASOURCE_PASSWORD: ostracker
+      APP_SMS_MOCK_ENABLED: "true"
+      APP_DEBUG_ENDPOINTS_ENABLED: "true"
+      TWILIO_CLIENT_PORTAL_URL: http://localhost:3000
+      JOBS_REMINDER_RETRY_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  adminer:
+    image: adminer:4
+    container_name: ostracker-adminer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"

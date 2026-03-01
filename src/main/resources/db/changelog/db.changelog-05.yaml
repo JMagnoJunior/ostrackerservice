@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260222-5
+      author: magnojr
+      changes:
+        - createTable:
+            tableName: notification_logs
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_notif_logs_order
+                    referencedTableName: orders
+                    referencedColumnNames: id
+              - column:
+                  name: provider
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider_sid
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sent_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_log
+                  type: TEXT

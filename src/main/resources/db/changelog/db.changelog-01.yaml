@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260222-1
+      author: magnojr
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: technical_summary
+                  type: TEXT
+              - column:
+                  name: final_value
+                  type: DECIMAL(10,2)
+              - column:
+                  name: finished_at
+                  type: TIMESTAMP
+              - column:
+                  name: hash_access
+                  type: VARCHAR(255)

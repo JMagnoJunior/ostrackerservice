@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260226-7-1
+      author: codex
+      changes:
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: final_value
+            columnDataType: DECIMAL(10,2)
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: finished_at
+            columnDataType: TIMESTAMP
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: hash_access
+            columnDataType: VARCHAR(255)
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: client_name
+            columnDataType: VARCHAR(255)
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: client_phone
+            columnDataType: VARCHAR(20)
