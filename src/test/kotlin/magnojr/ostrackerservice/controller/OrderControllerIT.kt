@@ -6,13 +6,12 @@ import magnojr.ostrackerservice.model.OrderStatus
 import magnojr.ostrackerservice.repository.NotificationLogRepository
 import magnojr.ostrackerservice.repository.OrderRepository
 import magnojr.ostrackerservice.service.TwilioClient
-import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
@@ -21,7 +20,6 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.math.BigDecimal
-import java.time.Duration
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,10 +41,8 @@ class OrderControllerIT : BaseControllerIT() {
     }
 
     @Test
-    fun `should create finalized order successfully and trigger notification`() {
+    fun `should create order in awaiting conference status without notification`() {
         // Given
-        `when`(twilioClient.sendMessage(anyString(), anyString())).thenReturn("mock-sid")
-
         val dto =
             OrderFinalizationDTO(
                 technicalSummary = "Reparo realizado com sucesso",
@@ -69,33 +65,55 @@ class OrderControllerIT : BaseControllerIT() {
         assertEquals(HttpStatus.CREATED, response.statusCode)
         val createdOrder = response.body
         assertNotNull(createdOrder)
-        assertEquals(OrderStatus.FINALIZADA, createdOrder!!.status)
+        assertEquals(OrderStatus.AGUARDANDO_CONFERENCIA, createdOrder!!.status)
         assertNotNull(createdOrder.finishedAt)
-        assertNotNull(createdOrder.hashAccess)
+        assertNull(createdOrder.hashAccess)
+        assertEquals(BigDecimal("250.00"), createdOrder.finalValue)
         assertEquals("Joao Silva", createdOrder.clientName)
         assertEquals("5511999999999", createdOrder.clientPhone)
 
-        // US-02: Verify retrieval by hash access
-        val orderRefreshedByHash = orderRepository.findByHashAccess(createdOrder.hashAccess!!).get()
-        assertEquals(createdOrder.id, orderRefreshedByHash.id)
-
-        // US-03_001: Verify notification log was created (async via listener)
-        await().atMost(Duration.ofSeconds(10)).until {
-            notificationLogRepository.findAll().any { it.orderId == createdOrder.id }
-        }
-
-        val log = notificationLogRepository.findAll().first { it.orderId == createdOrder.id }
-        assertEquals("TWILIO", log.provider)
-        assertEquals("SENT", log.status)
-        assertEquals("mock-sid", log.providerSid)
+        assertEquals(0, notificationLogRepository.count())
+        verifyNoInteractions(twilioClient)
     }
 
     @Test
-    fun `should return 400 when finalValue is missing`() {
+    fun `should create order when finalValue is missing`() {
         // Given
         val dto =
             mapOf(
                 "technicalSummary" to "Resumo",
+                "clientName" to "Joao Silva",
+                "clientPhone" to "5511999999999",
+            )
+
+        // When
+        val response =
+            restClient
+                .post()
+                .uri("/api/orders/finalizations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(dto)
+                .retrieve()
+                .toEntity(Order::class.java)
+
+        // Then
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        val createdOrder = response.body
+        assertNotNull(createdOrder)
+        assertEquals(OrderStatus.AGUARDANDO_CONFERENCIA, createdOrder!!.status)
+        assertNull(createdOrder.finalValue)
+        assertNull(createdOrder.hashAccess)
+        assertEquals(0, notificationLogRepository.count())
+        verifyNoInteractions(twilioClient)
+    }
+
+    @Test
+    fun `should return 400 when finalValue is negative`() {
+        // Given
+        val dto =
+            mapOf(
+                "technicalSummary" to "Resumo",
+                "finalValue" to -100.00,
                 "clientName" to "Joao Silva",
                 "clientPhone" to "5511999999999",
             )

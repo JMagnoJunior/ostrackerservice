@@ -23,11 +23,11 @@ class Order(
     var status: OrderStatus = OrderStatus.ABERTA,
     @Column(name = "technical_summary")
     var technicalSummary: String? = null,
-    @Column(name = "final_value", nullable = false)
+    @Column(name = "final_value", nullable = true)
     var finalValue: BigDecimal? = null,
     @Column(name = "finished_at", nullable = false)
     var finishedAt: OffsetDateTime? = null,
-    @Column(name = "hash_access", nullable = false)
+    @Column(name = "hash_access", nullable = true)
     var hashAccess: String? = null,
     @Column(name = "client_name", nullable = false)
     var clientName: String? = null,

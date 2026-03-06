@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260306-9-1
+      author: codex
+      changes:
+        - dropNotNullConstraint:
+            tableName: orders
+            columnName: final_value
+            columnDataType: DECIMAL(10,2)
+        - dropNotNullConstraint:
+            tableName: orders
+            columnName: hash_access
+            columnDataType: VARCHAR(255)

@@ -22,7 +22,7 @@ class OrderController(
     ): Order =
         orderService.createFinalizedOrder(
             technicalSummary = dto.technicalSummary,
-            finalValue = dto.finalValue!!,
+            finalValue = dto.finalValue,
             clientName = dto.clientName,
             clientPhone = dto.clientPhone,
         )
