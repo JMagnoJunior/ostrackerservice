@@ -6,12 +6,11 @@ import jakarta.validation.constraints.Positive
 import java.math.BigDecimal
 
 data class OrderFinalizationDTO(
-    val technicalSummary: String?,
+    @field:NotBlank
+    val technicalSummary: String,
     @field:Positive
     val finalValue: BigDecimal?,
-    @field:NotBlank
-    val clientName: String,
-    @field:NotBlank
+    val clientName: String?,
     @field:Pattern(regexp = "^[1-9][0-9]{10,14}$")
-    val clientPhone: String,
+    val clientPhone: String?,
 )

@@ -77,13 +77,11 @@ class OrderControllerIT : BaseControllerIT() {
     }
 
     @Test
-    fun `should create order when finalValue is missing`() {
+    fun `should create order with only technicalSummary`() {
         // Given
         val dto =
             mapOf(
                 "technicalSummary" to "Resumo",
-                "clientName" to "Joao Silva",
-                "clientPhone" to "5511999999999",
             )
 
         // When
@@ -102,6 +100,8 @@ class OrderControllerIT : BaseControllerIT() {
         assertNotNull(createdOrder)
         assertEquals(OrderStatus.AGUARDANDO_CONFERENCIA, createdOrder!!.status)
         assertNull(createdOrder.finalValue)
+        assertNull(createdOrder.clientName)
+        assertNull(createdOrder.clientPhone)
         assertNull(createdOrder.hashAccess)
         assertEquals(0, notificationLogRepository.count())
         verifyNoInteractions(twilioClient)
@@ -134,11 +134,10 @@ class OrderControllerIT : BaseControllerIT() {
     }
 
     @Test
-    fun `should return 400 when clientName is missing`() {
+    fun `should return 400 when technicalSummary is missing`() {
         // Given
         val dto =
             mapOf(
-                "technicalSummary" to "Resumo",
                 "finalValue" to 100.00,
                 "clientPhone" to "5511999999999",
             )
@@ -159,7 +158,32 @@ class OrderControllerIT : BaseControllerIT() {
     }
 
     @Test
-    fun `should return 400 when clientPhone is invalid`() {
+    fun `should return 400 when technicalSummary is blank`() {
+        // Given
+        val dto =
+            mapOf(
+                "technicalSummary" to "   ",
+                "finalValue" to 100.00,
+                "clientPhone" to "5511999999999",
+            )
+
+        // When
+        val response =
+            restClient
+                .post()
+                .uri("/api/orders/finalizations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(dto)
+                .retrieve()
+                .onStatus({ it.is4xxClientError }) { _, _ -> }
+                .toEntity(Map::class.java)
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+    }
+
+    @Test
+    fun `should return 400 when clientPhone is invalid when informed`() {
         // Given
         val dto =
             mapOf(

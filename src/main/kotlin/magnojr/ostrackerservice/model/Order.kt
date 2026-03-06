@@ -29,9 +29,9 @@ class Order(
     var finishedAt: OffsetDateTime? = null,
     @Column(name = "hash_access", nullable = true)
     var hashAccess: String? = null,
-    @Column(name = "client_name", nullable = false)
+    @Column(name = "client_name", nullable = true)
     var clientName: String? = null,
-    @Column(name = "client_phone", nullable = false)
+    @Column(name = "client_phone", nullable = true)
     var clientPhone: String? = null,
     @Column(name = "last_notification_at")
     var lastNotificationAt: OffsetDateTime? = null,

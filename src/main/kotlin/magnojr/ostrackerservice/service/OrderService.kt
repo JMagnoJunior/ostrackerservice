@@ -16,10 +16,10 @@ class OrderService(
 ) {
     @Transactional
     fun createFinalizedOrder(
-        technicalSummary: String?,
+        technicalSummary: String,
         finalValue: BigDecimal?,
-        clientName: String,
-        clientPhone: String,
+        clientName: String?,
+        clientPhone: String?,
     ): Order {
         val now = OffsetDateTime.now()
         val order =

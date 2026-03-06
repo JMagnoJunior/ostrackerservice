@@ -50,7 +50,7 @@ class OrderServiceTest {
     }
 
     @Test
-    fun `should allow null finalValue when creating order`() {
+    fun `should allow null finalValue and client fields when creating order`() {
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments.first() as Order }
         whenever(meterRegistry.counter("orders.finalized", "flow", "creation")).thenReturn(counter)
 
@@ -58,11 +58,13 @@ class OrderServiceTest {
             orderService.createFinalizedOrder(
                 technicalSummary = "Resumo tecnico",
                 finalValue = null,
-                clientName = "Joao",
-                clientPhone = "5511999999999",
+                clientName = null,
+                clientPhone = null,
             )
 
         assertNull(saved.finalValue)
+        assertNull(saved.clientName)
+        assertNull(saved.clientPhone)
         assertEquals(OrderStatus.AGUARDANDO_CONFERENCIA, saved.status)
         assertNull(saved.hashAccess)
         verify(counter).increment()
