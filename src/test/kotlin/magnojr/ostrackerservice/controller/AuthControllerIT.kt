@@ -2,6 +2,8 @@ package magnojr.ostrackerservice.controller
 
 import magnojr.ostrackerservice.TestcontainersConfiguration
 import magnojr.ostrackerservice.config.SecurityProperties
+import magnojr.ostrackerservice.repository.AppUserRepository
+import magnojr.ostrackerservice.service.JwtService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,6 +22,12 @@ class AuthControllerIT : BaseControllerIT() {
     @Autowired
     private lateinit var securityProperties: SecurityProperties
 
+    @Autowired
+    private lateinit var jwtService: JwtService
+
+    @Autowired
+    private lateinit var appUserRepository: AppUserRepository
+
     @Test
     fun `should issue token for valid client secret`() {
         val response =
@@ -35,6 +43,10 @@ class AuthControllerIT : BaseControllerIT() {
         val token = response.body!!["token"] as String?
         assertNotNull(token)
         assertTrue(token!!.isNotBlank())
+
+        val claims = jwtService.parsePrincipal(token)
+        assertEquals("SUPERUSUARIO", claims.role)
+        assertEquals(securityProperties.superuser.email.lowercase(), claims.email)
     }
 
     @Test
@@ -65,5 +77,13 @@ class AuthControllerIT : BaseControllerIT() {
                 .toEntity(String::class.java)
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
+    }
+
+    @Test
+    fun `should bootstrap exactly one primary active superuser on startup`() {
+        assertEquals(1L, appUserRepository.countPrimaryActiveSuperusers())
+        val primary = appUserRepository.findPrimaryActiveSuperuser()
+        assertTrue(primary.isPresent)
+        assertEquals(securityProperties.superuser.email.lowercase(), primary.get().email)
     }
 }

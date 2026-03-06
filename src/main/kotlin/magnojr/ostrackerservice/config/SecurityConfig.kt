@@ -31,6 +31,8 @@ class SecurityConfig(
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                     ).permitAll()
+                    .requestMatchers("/api/access/**")
+                    .hasRole("SUPERUSUARIO")
                     .anyRequest()
                     .authenticated()
             }.sessionManagement {

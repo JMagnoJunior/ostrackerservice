@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import magnojr.ostrackerservice.config.SecurityProperties
 import magnojr.ostrackerservice.service.JwtService
+import magnojr.ostrackerservice.service.SuperuserBootstrapService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -17,8 +18,9 @@ import java.security.MessageDigest
 class AuthController(
     private val jwtService: JwtService,
     private val securityProperties: SecurityProperties,
+    private val superuserBootstrapService: SuperuserBootstrapService,
 ) {
-    @Operation(summary = "Obtain a system JWT token")
+    @Operation(summary = "Obtain a JWT token bound to the primary active superuser")
     @SecurityRequirements
     @PostMapping("/token")
     fun token(
@@ -29,7 +31,16 @@ class AuthController(
         if (!MessageDigest.isEqual(expected, provided)) {
             throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid client secret")
         }
-        return TokenResponse(jwtService.generateSystemToken())
+
+        val superuser = superuserBootstrapService.ensurePrimarySuperuser()
+        val superuserId = requireNotNull(superuser.id) { "Primary superuser must have a persisted identifier" }
+        return TokenResponse(
+            jwtService.generateUserToken(
+                userId = superuserId.toString(),
+                email = superuser.email,
+                role = superuser.role.name,
+            ),
+        )
     }
 }
 

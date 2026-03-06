@@ -5,9 +5,11 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import magnojr.ostrackerservice.service.JwtService
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import java.util.Locale
 
 @Component
 class JwtAuthenticationFilter(
@@ -21,9 +23,13 @@ class JwtAuthenticationFilter(
         val authHeader = request.getHeader("Authorization")
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             val token = authHeader.substring(7)
-            if (jwtService.isTokenValid(token)) {
-                val auth = UsernamePasswordAuthenticationToken("system", null, emptyList())
+            try {
+                val claims = jwtService.parsePrincipal(token)
+                val authorities = listOf(SimpleGrantedAuthority("ROLE_${claims.role.uppercase(Locale.ROOT)}"))
+                val auth = UsernamePasswordAuthenticationToken(claims, null, authorities)
                 SecurityContextHolder.getContext().authentication = auth
+            } catch (_: Exception) {
+                SecurityContextHolder.clearContext()
             }
         }
         filterChain.doFilter(request, response)

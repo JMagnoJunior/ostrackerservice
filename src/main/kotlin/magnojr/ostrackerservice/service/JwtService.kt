@@ -16,28 +16,52 @@ class JwtService(
         Keys.hmacShaKeyFor(properties.jwtSecret.toByteArray())
     }
 
-    fun generateSystemToken(): String =
+    fun generateUserToken(
+        userId: String,
+        email: String,
+        role: String,
+    ): String =
         Jwts
             .builder()
-            .subject("system")
+            .subject(userId)
+            .claim("email", email)
+            .claim("role", role)
             .issuedAt(Date())
             .expiration(Date(System.currentTimeMillis() + properties.jwtExpiration))
             .signWith(signingKey)
             .compact()
 
+    fun parsePrincipal(token: String): AuthPrincipalClaims {
+        val claims = parseClaims(token)
+        val userId = claims.subject?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing subject")
+        val email = claims["email"]?.toString()?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing email claim")
+        val role = claims["role"]?.toString()?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing role claim")
+        return AuthPrincipalClaims(userId = userId, email = email, role = role)
+    }
+
     fun isTokenValid(token: String): Boolean =
         try {
+            parsePrincipal(token)
+            true
+        } catch (e: JwtException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+
+    private fun parseClaims(token: String): io.jsonwebtoken.Claims {
+        val claims =
             Jwts
                 .parser()
                 .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .payload
-                .expiration
-                .after(Date())
-        } catch (e: JwtException) {
-            false
-        } catch (e: IllegalArgumentException) {
-            false
+
+        if (claims.expiration == null || !claims.expiration.after(Date())) {
+            throw JwtException("Expired token")
         }
+
+        return claims
+    }
 }

@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260306-10-1
+      author: codex
+      changes:
+        - createTable:
+            tableName: app_users
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_primary_superuser
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: app_users
+            columnNames: email
+            constraintName: uk_app_users_email
+        - createIndex:
+            tableName: app_users
+            indexName: idx_app_users_status
+            columns:
+              - column:
+                  name: status
+        - sql:
+            dbms: postgresql
+            sql: CREATE UNIQUE INDEX uk_app_users_primary_active_superuser ON app_users (is_primary_superuser) WHERE role = 'SUPERUSUARIO' AND status = 'ATIVO' AND is_primary_superuser = true;
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: DROP INDEX IF EXISTS uk_app_users_primary_active_superuser;
+        - dropTable:
+            tableName: app_users
