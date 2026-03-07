@@ -61,7 +61,8 @@ class OrderConferenceService(
     }
 
     private fun findPendingOrThrow(orderId: UUID): Order =
-        orderRepository.findByIdAndStatus(orderId, OrderStatus.AGUARDANDO_CONFERENCIA)
+        orderRepository
+            .findByIdAndStatus(orderId, OrderStatus.AGUARDANDO_CONFERENCIA)
             .orElseThrow {
                 orderRepository.findById(orderId).orElseThrow { OrderNotFoundException(orderId) }
                 InvalidOrderStatusException("OS $orderId nao esta em AGUARDANDO_CONFERENCIA")

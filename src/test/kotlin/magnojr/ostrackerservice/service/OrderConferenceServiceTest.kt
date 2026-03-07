@@ -11,7 +11,6 @@ import magnojr.ostrackerservice.model.OrderStatus
 import magnojr.ostrackerservice.repository.OrderRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -81,12 +80,13 @@ class OrderConferenceServiceTest {
             .thenReturn(Optional.of(order))
         whenever(orderRepository.save(any())).thenAnswer { it.arguments[0] }
 
-        val dto = OrderConferenceUpdateDTO(
-            technicalSummary = "Novo resumo",
-            finalValue = BigDecimal("250.00"),
-            clientName = null,
-            clientPhone = null,
-        )
+        val dto =
+            OrderConferenceUpdateDTO(
+                technicalSummary = "Novo resumo",
+                finalValue = BigDecimal("250.00"),
+                clientName = null,
+                clientPhone = null,
+            )
 
         val result = service.updateConference(orderId, dto)
 
