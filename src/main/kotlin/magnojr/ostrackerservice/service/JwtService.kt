@@ -20,12 +20,14 @@ class JwtService(
         userId: String,
         email: String,
         role: String,
+        status: String,
     ): String =
         Jwts
             .builder()
             .subject(userId)
             .claim("email", email)
             .claim("role", role)
+            .claim("status", status)
             .issuedAt(Date())
             .expiration(Date(System.currentTimeMillis() + properties.jwtExpiration))
             .signWith(signingKey)
@@ -36,7 +38,8 @@ class JwtService(
         val userId = claims.subject?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing subject")
         val email = claims["email"]?.toString()?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing email claim")
         val role = claims["role"]?.toString()?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing role claim")
-        return AuthPrincipalClaims(userId = userId, email = email, role = role)
+        val status = claims["status"]?.toString()?.takeIf { it.isNotBlank() } ?: throw JwtException("Missing status claim")
+        return AuthPrincipalClaims(userId = userId, email = email, role = role, status = status)
     }
 
     fun isTokenValid(token: String): Boolean =

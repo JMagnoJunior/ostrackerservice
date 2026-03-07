@@ -17,15 +17,27 @@ class JwtServiceTest {
     private val jwtService = JwtService(properties)
 
     @Test
-    fun `should include and extract role claim`() {
+    fun `should include and extract role and status claims`() {
         val userId = UUID.randomUUID().toString()
-        val token = jwtService.generateUserToken(userId, "superuser@ostracker.local", "SUPERUSUARIO")
+        val token = jwtService.generateUserToken(userId, "superuser@ostracker.local", "SUPERUSUARIO", "ATIVO")
 
         val claims = jwtService.parsePrincipal(token)
 
         assertEquals(userId, claims.userId)
         assertEquals("superuser@ostracker.local", claims.email)
         assertEquals("SUPERUSUARIO", claims.role)
+        assertEquals("ATIVO", claims.status)
+    }
+
+    @Test
+    fun `should include and extract status for pending user`() {
+        val userId = UUID.randomUUID().toString()
+        val token = jwtService.generateUserToken(userId, "new@ostracker.local", "PENDENTE", "PENDENTE_APROVACAO")
+
+        val claims = jwtService.parsePrincipal(token)
+
+        assertEquals("PENDENTE", claims.role)
+        assertEquals("PENDENTE_APROVACAO", claims.status)
     }
 
     @Test
@@ -40,6 +52,7 @@ class JwtServiceTest {
                 userId = UUID.randomUUID().toString(),
                 email = "user@ostracker.local",
                 role = "TECNICO",
+                status = "ATIVO",
             )
 
         assertTrue(jwtService.isTokenValid(token))

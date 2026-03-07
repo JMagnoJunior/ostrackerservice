@@ -68,6 +68,7 @@ class OrderConferenceControllerIT : BaseControllerIT() {
             userId = UUID.randomUUID().toString(),
             email = "secretaria@ostracker.local",
             role = "SECRETARIA",
+            status = "ATIVO",
         )
 
     // --- listPendingConference ---
@@ -211,6 +212,7 @@ class OrderConferenceControllerIT : BaseControllerIT() {
                 userId = UUID.randomUUID().toString(),
                 email = "tecnico@ostracker.local",
                 role = "TECNICO",
+                status = "ATIVO",
             )
 
         val response =

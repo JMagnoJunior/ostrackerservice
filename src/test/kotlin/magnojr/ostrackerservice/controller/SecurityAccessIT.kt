@@ -101,6 +101,7 @@ class SecurityAccessIT : BaseControllerIT() {
                 userId = UUID.randomUUID().toString(),
                 email = "tecnico@ostracker.local",
                 role = "TECNICO",
+                status = "ATIVO",
             )
 
         val response =
@@ -125,5 +126,26 @@ class SecurityAccessIT : BaseControllerIT() {
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertTrue(response.body != null)
+    }
+
+    @Test
+    fun `should return 403 for protected endpoint with PENDENTE role`() {
+        val pendingToken =
+            jwtService.generateUserToken(
+                userId = UUID.randomUUID().toString(),
+                email = "pending@ostracker.local",
+                role = "PENDENTE",
+                status = "PENDENTE_APROVACAO",
+            )
+
+        val response =
+            authenticatedClient(pendingToken)
+                .get()
+                .uri("/api/debug/orders?size=1")
+                .retrieve()
+                .onStatus({ it.is4xxClientError }) { _, _ -> }
+                .toEntity(String::class.java)
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
 }

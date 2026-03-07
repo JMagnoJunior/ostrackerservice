@@ -4,4 +4,5 @@ enum class UserRole {
     SUPERUSUARIO,
     TECNICO,
     SECRETARIA,
+    PENDENTE,
 }

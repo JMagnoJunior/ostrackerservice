@@ -10,10 +10,19 @@ class SecurityProperties {
     var jwtExpiration: Long = 86400000 // 24h
     lateinit var clientSecret: String
     var superuser: SuperuserProperties = SuperuserProperties()
+    var google: GoogleProperties = GoogleProperties()
 
     class SuperuserProperties {
         var bootstrapEnabled: Boolean = true
         var email: String = "superuser@localhost"
         var displayName: String = "Superusuario Primario"
+    }
+
+    class GoogleProperties {
+        var clientId: String = ""
+        var jwksUri: String = "https://www.googleapis.com/oauth2/v3/certs"
+        var allowedDomain: String = ""
+        var clockSkewSeconds: Long = 0
+        var httpTimeoutMs: Long = 5000
     }
 }

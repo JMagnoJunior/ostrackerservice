@@ -31,6 +31,7 @@ class JwtAuthenticationFilterTest {
                     userId = "1",
                     email = "superuser@ostracker.local",
                     role = "SUPERUSUARIO",
+                    status = "ATIVO",
                 ),
             )
         val request =

@@ -3,6 +3,8 @@ package magnojr.ostrackerservice.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import magnojr.ostrackerservice.config.SecurityProperties
+import magnojr.ostrackerservice.service.GoogleOAuthLoginService
+import magnojr.ostrackerservice.service.GoogleTokenVerificationException
 import magnojr.ostrackerservice.service.JwtService
 import magnojr.ostrackerservice.service.SuperuserBootstrapService
 import org.springframework.http.HttpStatus
@@ -19,6 +21,7 @@ class AuthController(
     private val jwtService: JwtService,
     private val securityProperties: SecurityProperties,
     private val superuserBootstrapService: SuperuserBootstrapService,
+    private val googleOAuthLoginService: GoogleOAuthLoginService,
 ) {
     @Operation(summary = "Obtain a JWT token bound to the primary active superuser")
     @SecurityRequirements
@@ -39,8 +42,23 @@ class AuthController(
                 userId = superuserId.toString(),
                 email = superuser.email,
                 role = superuser.role.name,
+                status = superuser.status.name,
             ),
         )
+    }
+
+    @Operation(summary = "Authenticate via Google OAuth ID token")
+    @SecurityRequirements
+    @PostMapping("/google")
+    fun googleLogin(
+        @RequestBody request: GoogleLoginRequest,
+    ): AuthSessionResponse {
+        try {
+            val result = googleOAuthLoginService.authenticate(request.idToken)
+            return AuthSessionResponse(token = result.token, status = result.status, pending = result.isPending)
+        } catch (e: GoogleTokenVerificationException) {
+            throw ResponseStatusException(HttpStatus.UNAUTHORIZED, e.message)
+        }
     }
 }
 
@@ -50,4 +68,14 @@ data class TokenRequest(
 
 data class TokenResponse(
     val token: String,
+)
+
+data class GoogleLoginRequest(
+    val idToken: String,
+)
+
+data class AuthSessionResponse(
+    val token: String,
+    val status: String,
+    val pending: Boolean,
 )

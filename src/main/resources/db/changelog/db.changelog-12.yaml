@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260307-12-1
+      author: codex
+      comment: "US-21: adiciona coluna first_login_at em app_users"
+      changes:
+        - addColumn:
+            tableName: app_users
+            columns:
+              - column:
+                  name: first_login_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: app_users
+            columnName: first_login_at
+
+  - changeSet:
+      id: 20260307-12-2
+      author: codex
+      comment: "US-21: backfill first_login_at com created_at para registros existentes"
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: UPDATE app_users SET first_login_at = created_at WHERE first_login_at IS NULL;
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: UPDATE app_users SET first_login_at = NULL;

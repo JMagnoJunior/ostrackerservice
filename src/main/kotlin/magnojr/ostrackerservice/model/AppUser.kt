@@ -31,12 +31,16 @@ class AppUser(
     var status: UserStatus,
     @Column(name = "is_primary_superuser", nullable = false)
     var isPrimarySuperuser: Boolean = false,
+    @Column(name = "first_login_at")
+    var firstLoginAt: OffsetDateTime? = null,
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
     @Column(name = "updated_at", nullable = false)
     var updatedAt: OffsetDateTime = OffsetDateTime.now(),
 ) {
     fun isActive(): Boolean = status == UserStatus.ATIVO
+
+    fun isPendingApproval(): Boolean = status == UserStatus.PENDENTE_APROVACAO
 
     fun isPrimaryActiveSuperuser(): Boolean = role == UserRole.SUPERUSUARIO && isActive() && isPrimarySuperuser
 

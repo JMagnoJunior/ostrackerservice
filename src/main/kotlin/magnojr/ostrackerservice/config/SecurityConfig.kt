@@ -26,6 +26,7 @@ class SecurityConfig(
                     .permitAll()
                     .requestMatchers(
                         "/api/auth/token",
+                        "/api/auth/google",
                         "/actuator/health",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
@@ -36,7 +37,7 @@ class SecurityConfig(
                     .requestMatchers("/admin/orders/conference/**")
                     .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                     .anyRequest()
-                    .authenticated()
+                    .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
             }.sessionManagement {
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }.exceptionHandling {
