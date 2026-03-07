@@ -11,6 +11,7 @@ class SecurityProperties {
     lateinit var clientSecret: String
     var superuser: SuperuserProperties = SuperuserProperties()
     var google: GoogleProperties = GoogleProperties()
+    var cors: CorsProperties = CorsProperties()
 
     class SuperuserProperties {
         var bootstrapEnabled: Boolean = true
@@ -24,5 +25,9 @@ class SecurityProperties {
         var allowedDomain: String = ""
         var clockSkewSeconds: Long = 0
         var httpTimeoutMs: Long = 5000
+    }
+
+    class CorsProperties {
+        var allowedOrigins: List<String> = emptyList()
     }
 }
