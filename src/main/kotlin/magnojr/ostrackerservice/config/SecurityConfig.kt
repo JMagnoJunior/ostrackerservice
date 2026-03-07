@@ -33,6 +33,8 @@ class SecurityConfig(
                     ).permitAll()
                     .requestMatchers("/api/access/**")
                     .hasRole("SUPERUSUARIO")
+                    .requestMatchers("/admin/orders/conference/**")
+                    .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                     .anyRequest()
                     .authenticated()
             }.sessionManagement {

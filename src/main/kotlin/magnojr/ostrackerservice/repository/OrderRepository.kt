@@ -13,6 +13,16 @@ import java.util.UUID
 interface OrderRepository : JpaRepository<Order, UUID> {
     fun findByHashAccess(hashAccess: String): Optional<Order>
 
+    fun findByStatusOrderByFinishedAtAsc(
+        status: OrderStatus,
+        pageable: Pageable,
+    ): Page<Order>
+
+    fun findByIdAndStatus(
+        id: UUID,
+        status: OrderStatus,
+    ): Optional<Order>
+
     @Query(
         """
         select o from Order o
