@@ -49,6 +49,8 @@ class SecurityConfig(
                 .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                 .requestMatchers("/admin/orders/*/delivery/confirm")
                 .hasAnyRole("TECNICO", "SUPERUSUARIO")
+                .requestMatchers(HttpMethod.POST, "/api/orders/finalizations")
+                .hasAnyRole("TECNICO", "SUPERUSUARIO")
                 .anyRequest()
                 .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
         }
