@@ -41,4 +41,6 @@ class Order(
     @Enumerated(EnumType.STRING)
     @Column(name = "scheduled_shift", length = 20)
     var scheduledShift: ScheduledShift? = null,
+    @Column(name = "delivered_at")
+    var deliveredAt: OffsetDateTime? = null,
 )

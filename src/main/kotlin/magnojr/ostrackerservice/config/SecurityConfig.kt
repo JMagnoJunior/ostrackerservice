@@ -45,6 +45,10 @@ class SecurityConfig(
                 .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                 .requestMatchers("/admin/orders/*/contact-logs", "/admin/orders/*/contact-logs/**")
                 .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
+                .requestMatchers("/admin/orders/*/delivery/schedule")
+                .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
+                .requestMatchers("/admin/orders/*/delivery/confirm")
+                .hasAnyRole("TECNICO", "SUPERUSUARIO")
                 .anyRequest()
                 .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
         }

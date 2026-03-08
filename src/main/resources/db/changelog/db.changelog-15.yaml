@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260308-15-1
+      author: backend-architect
+      comment: "US-15: adiciona coluna delivered_at em orders para registro de confirmacao de entrega"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: delivered_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: orders
+            columnName: delivered_at
