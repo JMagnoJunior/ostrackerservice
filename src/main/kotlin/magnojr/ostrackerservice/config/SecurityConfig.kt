@@ -23,34 +23,36 @@ class SecurityConfig(
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http
-            .cors { }
-            .csrf { it.disable() }
-            .authorizeHttpRequests { auth ->
-                auth
-                    .dispatcherTypeMatchers(DispatcherType.ERROR)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.OPTIONS, "/**")
-                    .permitAll()
-                    .requestMatchers(
-                        "/api/auth/token",
-                        "/api/auth/google",
-                        "/actuator/health",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                    ).permitAll()
-                    .requestMatchers("/api/access/**")
-                    .hasRole("SUPERUSUARIO")
-                    .requestMatchers("/admin/orders/conference/**")
-                    .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
-                    .anyRequest()
-                    .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
-            }.sessionManagement {
-                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            }.exceptionHandling {
-                it.authenticationEntryPoint(HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-            }.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
+        http.cors { }
+        http.csrf { it.disable() }
+        http.authorizeHttpRequests { auth ->
+            auth
+                .dispatcherTypeMatchers(DispatcherType.ERROR)
+                .permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                .permitAll()
+                .requestMatchers(
+                    "/api/auth/token",
+                    "/api/auth/google",
+                    "/actuator/health",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                ).permitAll()
+                .requestMatchers("/api/access/**")
+                .hasRole("SUPERUSUARIO")
+                .requestMatchers("/admin/orders/conference/**", "/admin/orders/monitoring/**")
+                .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
+                .anyRequest()
+                .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
+        }
+        http.sessionManagement {
+            it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        }
+        http.exceptionHandling {
+            it.authenticationEntryPoint(HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+        }
+        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()
     }

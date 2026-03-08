@@ -5,12 +5,15 @@ import magnojr.ostrackerservice.model.OrderStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import java.time.OffsetDateTime
 import java.util.Optional
 import java.util.UUID
 
-interface OrderRepository : JpaRepository<Order, UUID> {
+interface OrderRepository :
+    JpaRepository<Order, UUID>,
+    JpaSpecificationExecutor<Order> {
     fun findByHashAccess(hashAccess: String): Optional<Order>
 
     fun findByStatusOrderByFinishedAtAsc(
@@ -53,4 +56,13 @@ interface OrderRepository : JpaRepository<Order, UUID> {
         cutoff: OffsetDateTime,
         pageable: Pageable,
     ): List<Order>
+
+    @Query(
+        """
+        select o.status as status, count(o) as count
+        from Order o
+        group by o.status
+        """,
+    )
+    fun countGroupedByStatus(): List<OrderStatusCountProjection>
 }
