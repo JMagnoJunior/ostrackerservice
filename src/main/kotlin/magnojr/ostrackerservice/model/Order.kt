@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -35,4 +36,9 @@ class Order(
     var clientPhone: String? = null,
     @Column(name = "last_notification_at")
     var lastNotificationAt: OffsetDateTime? = null,
+    @Column(name = "scheduled_date")
+    var scheduledDate: LocalDate? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scheduled_shift", length = 20)
+    var scheduledShift: ScheduledShift? = null,
 )

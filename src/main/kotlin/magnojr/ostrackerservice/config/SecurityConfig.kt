@@ -41,7 +41,7 @@ class SecurityConfig(
                 ).permitAll()
                 .requestMatchers("/api/access/**")
                 .hasRole("SUPERUSUARIO")
-                .requestMatchers("/admin/orders/conference/**", "/admin/orders/monitoring/**")
+                .requestMatchers("/admin/orders/conference/**", "/admin/orders/monitoring/**", "/admin/orders/*/schedule")
                 .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                 .anyRequest()
                 .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")

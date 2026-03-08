@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260308-13-1
+      author: backend-architect
+      comment: "US-13: adiciona campos de agendamento em orders"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: scheduled_date
+                  type: DATE
+                  constraints:
+                    nullable: true
+              - column:
+                  name: scheduled_shift
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: orders
+            columnName: scheduled_date
+        - dropColumn:
+            tableName: orders
+            columnName: scheduled_shift
