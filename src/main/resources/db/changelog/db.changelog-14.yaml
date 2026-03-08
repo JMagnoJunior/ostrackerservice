@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260308-14-1
+      author: backend-architect
+      comment: "US-14: cria tabela order_contact_logs para histórico de contatos manuais"
+      changes:
+        - createTable:
+            tableName: order_contact_logs
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_contact_logs_order
+                    references: orders(id)
+              - column:
+                  name: author_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_contact_logs_author
+                    references: app_users(id)
+              - column:
+                  name: note
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_order_contact_logs_order_id
+            tableName: order_contact_logs
+            columns:
+              - column:
+                  name: order_id
+              - column:
+                  name: created_at
+                  descending: true
+      rollback:
+        - dropIndex:
+            indexName: idx_order_contact_logs_order_id
+            tableName: order_contact_logs
+        - dropTable:
+            tableName: order_contact_logs
