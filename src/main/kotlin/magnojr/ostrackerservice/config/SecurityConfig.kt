@@ -43,6 +43,8 @@ class SecurityConfig(
                 .hasRole("SUPERUSUARIO")
                 .requestMatchers("/admin/orders/conference/**", "/admin/orders/monitoring/**", "/admin/orders/*/schedule")
                 .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
+                .requestMatchers("/admin/orders/*/contact-logs", "/admin/orders/*/contact-logs/**")
+                .hasAnyRole("SECRETARIA", "SUPERUSUARIO")
                 .anyRequest()
                 .hasAnyRole("SUPERUSUARIO", "TECNICO", "SECRETARIA")
         }
