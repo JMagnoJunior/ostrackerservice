@@ -3,6 +3,7 @@ package magnojr.ostrackerservice.controller
 import magnojr.ostrackerservice.TestcontainersConfiguration
 import magnojr.ostrackerservice.model.Order
 import magnojr.ostrackerservice.model.OrderStatus
+import magnojr.ostrackerservice.model.ScheduledShift
 import magnojr.ostrackerservice.repository.NotificationLogRepository
 import magnojr.ostrackerservice.repository.OrderRepository
 import magnojr.ostrackerservice.service.JwtService
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -79,6 +81,40 @@ class MonitoringDashboardControllerIT : BaseControllerIT() {
     }
 
     @Test
+    fun `summary deve incluir contadores dos 3 novos filtros com valores corretos`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-08T15:00:00Z")
+        // AGUARDANDO_CONFERENCIA
+        saveOrder(OrderStatus.AGUARDANDO_CONFERENCIA, referenceAt.minusHours(2), "hash-conf-1")
+        saveOrder(OrderStatus.AGUARDANDO_CONFERENCIA, referenceAt.minusHours(3), "hash-conf-2")
+        // AGENDADAS
+        saveOrder(OrderStatus.AGENDADA_PRESENCIAL, referenceAt.minusDays(2), "hash-ag-1")
+        saveOrder(OrderStatus.AGENDADA_DELIVERY, referenceAt.minusDays(3), "hash-ag-2")
+        // NO_SHOW: turno TARDE expirou ontem
+        saveOrderWithSchedule(
+            status = OrderStatus.AGENDADA_PRESENCIAL,
+            finishedAt = referenceAt.minusDays(5),
+            hashAccess = "hash-ns-1",
+            scheduledDate = referenceAt.toLocalDate().minusDays(1),
+            scheduledShift = ScheduledShift.TARDE,
+        )
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring/summary?referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+
+        @Suppress("UNCHECKED_CAST")
+        val counters = response.body!!["counters"] as Map<String, Any?>
+        assertEquals(2, (counters["aguardandoConferencia"] as Number).toInt())
+        assertEquals(3, (counters["agendadas"] as Number).toInt())
+        assertEquals(1, (counters["noShow"] as Number).toInt())
+    }
+
+    @Test
     fun `listagem deve respeitar paginacao e ordenacao`() {
         val referenceAt = OffsetDateTime.parse("2026-03-08T12:00:00Z")
         saveOrder(OrderStatus.FINALIZADA, referenceAt.minusHours(50), "hash-page-1")
@@ -135,6 +171,134 @@ class MonitoringDashboardControllerIT : BaseControllerIT() {
         assertEquals("FINALIZADA", item["status"])
         assertEquals("PROXIMOS_DESCARTES", item["monitoringFilter"])
         assertEquals(20L, (item["daysToDiscard"] as Number).toLong())
+    }
+
+    @Test
+    fun `listagem com filter=AGUARDANDO_CONFERENCIA retorna apenas OS no status correto`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-08T12:00:00Z")
+        saveOrder(OrderStatus.AGUARDANDO_CONFERENCIA, referenceAt.minusHours(1), "hash-ac-1")
+        saveOrder(OrderStatus.AGUARDANDO_CONFERENCIA, referenceAt.minusHours(2), "hash-ac-2")
+        saveOrder(OrderStatus.FINALIZADA, referenceAt.minusHours(5), "hash-ac-3")
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring?filter=AGUARDANDO_CONFERENCIA&referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val content = response.body!!["content"] as List<*>
+        assertEquals(2, content.size)
+        @Suppress("UNCHECKED_CAST")
+        content.forEach { item ->
+            assertEquals("AGUARDANDO_CONFERENCIA", (item as Map<String, Any?>)["status"])
+        }
+    }
+
+    @Test
+    fun `listagem com filter=AGENDADAS retorna OS AGENDADA_PRESENCIAL e AGENDADA_DELIVERY`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-08T12:00:00Z")
+        saveOrder(OrderStatus.AGENDADA_PRESENCIAL, referenceAt.minusDays(1), "hash-ag-p")
+        saveOrder(OrderStatus.AGENDADA_DELIVERY, referenceAt.minusDays(2), "hash-ag-d")
+        saveOrder(OrderStatus.FINALIZADA, referenceAt.minusDays(1), "hash-ag-f")
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring?filter=AGENDADAS&referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val content = response.body!!["content"] as List<*>
+        assertEquals(2, content.size)
+        @Suppress("UNCHECKED_CAST")
+        val statuses = content.map { (it as Map<String, Any?>)["status"] as String }.toSet()
+        assertTrue(statuses.contains("AGENDADA_PRESENCIAL"))
+        assertTrue(statuses.contains("AGENDADA_DELIVERY"))
+    }
+
+    @Test
+    fun `listagem com filter=NO_SHOW retorna apenas OS com turno expirado`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-09T20:00:00-03:00")
+        val yesterday = referenceAt.toLocalDate().minusDays(1)
+        val today = referenceAt.toLocalDate()
+
+        // Turno TARDE ontem — expirado (18:00 local)
+        saveOrderWithSchedule(
+            status = OrderStatus.AGENDADA_PRESENCIAL,
+            finishedAt = referenceAt.minusDays(5),
+            hashAccess = "hash-ns-expired",
+            scheduledDate = yesterday,
+            scheduledShift = ScheduledShift.TARDE,
+        )
+        // Turno NOITE hoje — ainda não expirou às 20:00 (expira às 23:59)
+        saveOrderWithSchedule(
+            status = OrderStatus.AGENDADA_DELIVERY,
+            finishedAt = referenceAt.minusDays(3),
+            hashAccess = "hash-ns-noite-today",
+            scheduledDate = today,
+            scheduledShift = ScheduledShift.NOITE,
+        )
+        // Sem scheduledDate — não qualifica
+        saveOrder(OrderStatus.AGENDADA_PRESENCIAL, referenceAt.minusDays(2), "hash-ns-no-date")
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring?filter=NO_SHOW&referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val content = response.body!!["content"] as List<*>
+        assertEquals(1, content.size)
+        @Suppress("UNCHECKED_CAST")
+        assertEquals("AGENDADA_PRESENCIAL", (content.first() as Map<String, Any?>)["status"])
+    }
+
+    @Test
+    fun `listagem com filter=NO_SHOW nao retorna OS com scheduledDate futuro`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-09T10:00:00-03:00")
+        val tomorrow = referenceAt.toLocalDate().plusDays(1)
+
+        saveOrderWithSchedule(
+            status = OrderStatus.AGENDADA_PRESENCIAL,
+            finishedAt = referenceAt.minusDays(2),
+            hashAccess = "hash-ns-future",
+            scheduledDate = tomorrow,
+            scheduledShift = ScheduledShift.MANHA,
+        )
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring?filter=NO_SHOW&referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val content = response.body!!["content"] as List<*>
+        assertEquals(0, content.size)
+    }
+
+    @Test
+    fun `listagem com filter=NO_SHOW nao retorna OS sem scheduledDate`() {
+        val referenceAt = OffsetDateTime.parse("2026-03-09T10:00:00-03:00")
+
+        saveOrder(OrderStatus.AGENDADA_PRESENCIAL, referenceAt.minusDays(2), "hash-ns-nodate")
+
+        val response =
+            authenticatedClient(secretariaToken())
+                .get()
+                .uri("/admin/orders/monitoring?filter=NO_SHOW&referenceAt=$referenceAt")
+                .retrieve()
+                .toEntity(Map::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val content = response.body!!["content"] as List<*>
+        assertEquals(0, content.size)
     }
 
     @Test
@@ -215,6 +379,26 @@ class MonitoringDashboardControllerIT : BaseControllerIT() {
             hashAccess = hashAccess,
             clientName = "Cliente IT",
             clientPhone = "5511999990000",
+        ),
+    )
+
+    private fun saveOrderWithSchedule(
+        status: OrderStatus,
+        finishedAt: OffsetDateTime?,
+        hashAccess: String,
+        scheduledDate: LocalDate,
+        scheduledShift: ScheduledShift,
+    ) = orderRepository.save(
+        Order(
+            status = status,
+            technicalSummary = "Resumo tecnico",
+            finalValue = BigDecimal("100.00"),
+            finishedAt = finishedAt,
+            hashAccess = hashAccess,
+            clientName = "Cliente IT",
+            clientPhone = "5511999990000",
+            scheduledDate = scheduledDate,
+            scheduledShift = scheduledShift,
         ),
     )
 

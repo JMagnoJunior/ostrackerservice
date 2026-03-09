@@ -10,11 +10,15 @@ import magnojr.ostrackerservice.controller.MonitoringStatusVolumeDTO
 import magnojr.ostrackerservice.controller.MonitoringSummaryDTO
 import magnojr.ostrackerservice.model.Order
 import magnojr.ostrackerservice.model.OrderStatus
+import magnojr.ostrackerservice.model.ScheduledShift
 import magnojr.ostrackerservice.repository.OrderRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 @Service
@@ -34,6 +38,12 @@ class MonitoringDashboardService(
                     orderRepository.count(
                         filterSpecification(MonitoringFilter.PROXIMOS_DESCARTES, referenceAt),
                     ),
+                aguardandoConferencia =
+                    orderRepository.count(
+                        filterSpecification(MonitoringFilter.AGUARDANDO_CONFERENCIA, referenceAt),
+                    ),
+                agendadas = orderRepository.count(filterSpecification(MonitoringFilter.AGENDADAS, referenceAt)),
+                noShow = orderRepository.count(filterSpecification(MonitoringFilter.NO_SHOW, referenceAt)),
             )
 
         val countsByStatus: Map<OrderStatus, Long> =
@@ -70,8 +80,8 @@ class MonitoringDashboardService(
         referenceAt: OffsetDateTime,
     ): MonitoringOrderItemDTO {
         val orderId = requireNotNull(order.id) { "Order id nao pode ser nulo para monitoramento" }
-        val finishedAt = requireNotNull(order.finishedAt) { "Order $orderId sem finishedAt nao pode ser exibida no monitoramento" }
-        val discardAt = finishedAt.plusDays(monitoringProperties.discardDeadlineDays)
+        val finishedAt = order.finishedAt
+        val discardAt = finishedAt?.plusDays(monitoringProperties.discardDeadlineDays)
 
         return MonitoringOrderItemDTO(
             id = orderId,
@@ -81,10 +91,12 @@ class MonitoringDashboardService(
             technicalSummary = order.technicalSummary,
             finalValue = order.finalValue,
             finishedAt = finishedAt,
-            inactiveHours = ChronoUnit.HOURS.between(finishedAt, referenceAt),
-            discardAt = discardAt,
-            daysToDiscard = ChronoUnit.DAYS.between(referenceAt, discardAt),
+            inactiveHours = if (finishedAt != null) ChronoUnit.HOURS.between(finishedAt, referenceAt) else 0L,
+            discardAt = discardAt ?: referenceAt,
+            daysToDiscard = if (discardAt != null) ChronoUnit.DAYS.between(referenceAt, discardAt) else 0L,
             monitoringFilter = filter,
+            scheduledDate = order.scheduledDate,
+            scheduledShift = order.scheduledShift,
         )
     }
 
@@ -96,6 +108,9 @@ class MonitoringDashboardService(
             MonitoringFilter.SEM_AGENDAMENTO -> semAgendamentoSpecification()
             MonitoringFilter.ATRASADOS -> atrasadosSpecification(referenceAt)
             MonitoringFilter.PROXIMOS_DESCARTES -> proximosDescartesSpecification(referenceAt)
+            MonitoringFilter.AGUARDANDO_CONFERENCIA -> aguardandoConferenciaSpecification()
+            MonitoringFilter.AGENDADAS -> agendadasSpecification()
+            MonitoringFilter.NO_SHOW -> noShowSpecification(referenceAt)
         }
 
     private fun semAgendamentoSpecification(): Specification<Order> =
@@ -136,6 +151,58 @@ class MonitoringDashboardService(
         }
     }
 
+    private fun aguardandoConferenciaSpecification(): Specification<Order> =
+        Specification { root, _, criteriaBuilder ->
+            criteriaBuilder.equal(root.get<OrderStatus>("status"), OrderStatus.AGUARDANDO_CONFERENCIA)
+        }
+
+    private fun agendadasSpecification(): Specification<Order> =
+        Specification { root, _, criteriaBuilder ->
+            root.get<OrderStatus>("status").`in`(AGENDADAS_STATUSES)
+        }
+
+    private fun noShowSpecification(referenceAt: OffsetDateTime): Specification<Order> {
+        val zone = ZoneId.of(monitoringProperties.noShowZoneId)
+        val today = referenceAt.atZoneSameInstant(zone).toLocalDate()
+
+        val endOfManha = today.atTime(LocalTime.of(monitoringProperties.noShowShiftEndManha, 0)).atZone(zone).toOffsetDateTime()
+        val endOfTarde = today.atTime(LocalTime.of(monitoringProperties.noShowShiftEndTarde, 0)).atZone(zone).toOffsetDateTime()
+        val endOfNoite = today.atTime(LocalTime.of(monitoringProperties.noShowShiftEndNoite, 59)).atZone(zone).toOffsetDateTime()
+
+        val cutoffManha = if (referenceAt.isAfter(endOfManha)) today else today.minusDays(1)
+        val cutoffTarde = if (referenceAt.isAfter(endOfTarde)) today else today.minusDays(1)
+        val cutoffNoite = if (referenceAt.isAfter(endOfNoite)) today else today.minusDays(1)
+
+        return Specification { root, _, cb ->
+            val statusPredicate = root.get<OrderStatus>("status").`in`(AGENDADAS_STATUSES)
+            val scheduledDatePath = root.get<LocalDate>("scheduledDate")
+            val scheduledShiftPath = root.get<ScheduledShift>("scheduledShift")
+
+            val manha =
+                cb.and(
+                    cb.equal(scheduledShiftPath, ScheduledShift.MANHA),
+                    cb.lessThanOrEqualTo(scheduledDatePath, cutoffManha),
+                )
+            val tarde =
+                cb.and(
+                    cb.equal(scheduledShiftPath, ScheduledShift.TARDE),
+                    cb.lessThanOrEqualTo(scheduledDatePath, cutoffTarde),
+                )
+            val noite =
+                cb.and(
+                    cb.equal(scheduledShiftPath, ScheduledShift.NOITE),
+                    cb.lessThanOrEqualTo(scheduledDatePath, cutoffNoite),
+                )
+
+            cb.and(
+                statusPredicate,
+                cb.isNotNull(scheduledDatePath),
+                cb.isNotNull(scheduledShiftPath),
+                cb.or(manha, tarde, noite),
+            )
+        }
+    }
+
     private fun statusSpecification(statuses: Set<OrderStatus>?): Specification<Order>? {
         if (statuses.isNullOrEmpty()) {
             return null
@@ -145,5 +212,6 @@ class MonitoringDashboardService(
 
     companion object {
         private val SEM_AGENDAMENTO_STATUSES = setOf(OrderStatus.FINALIZADA, OrderStatus.AGUARDANDO_AGENDAMENTO)
+        private val AGENDADAS_STATUSES = setOf(OrderStatus.AGENDADA_PRESENCIAL, OrderStatus.AGENDADA_DELIVERY)
     }
 }

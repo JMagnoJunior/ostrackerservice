@@ -1,8 +1,10 @@
 package magnojr.ostrackerservice.controller
 
 import magnojr.ostrackerservice.model.OrderStatus
+import magnojr.ostrackerservice.model.ScheduledShift
 import org.springframework.data.domain.Page
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -10,6 +12,9 @@ enum class MonitoringFilter {
     ATRASADOS,
     SEM_AGENDAMENTO,
     PROXIMOS_DESCARTES,
+    AGUARDANDO_CONFERENCIA,
+    AGENDADAS,
+    NO_SHOW,
 }
 
 data class MonitoringSummaryDTO(
@@ -22,6 +27,9 @@ data class MonitoringCountersDTO(
     val atrasados: Long,
     val semAgendamento: Long,
     val proximosDescartes: Long,
+    val aguardandoConferencia: Long,
+    val agendadas: Long,
+    val noShow: Long,
 )
 
 data class MonitoringStatusVolumeDTO(
@@ -36,11 +44,13 @@ data class MonitoringOrderItemDTO(
     val clientPhone: String?,
     val technicalSummary: String?,
     val finalValue: BigDecimal?,
-    val finishedAt: OffsetDateTime,
+    val finishedAt: OffsetDateTime?,
     val inactiveHours: Long,
-    val discardAt: OffsetDateTime,
+    val discardAt: OffsetDateTime?,
     val daysToDiscard: Long,
     val monitoringFilter: MonitoringFilter,
+    val scheduledDate: LocalDate?,
+    val scheduledShift: ScheduledShift?,
 )
 
 data class MonitoringPageResponseDTO<T : Any>(
